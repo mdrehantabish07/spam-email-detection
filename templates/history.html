@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction History - Spam Email Detection</title>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Inline theme init to avoid flicker
+        (function() {
+            var theme = localStorage.getItem('spamguard_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="brand">
+                <div class="brand-icon">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>SpamGuard ML</h1>
+                    <span>ML Lab Mini Project</span>
+                </div>
+            </a>
+            
+            <div class="nav-right">
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link"><i class="fas fa-arrow-left"></i> Back to Detector</a></li>
+                    <li><a href="/history" class="nav-link active">History</a></li>
+                </ul>
+
+                <!-- Theme Toggle Button -->
+                <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Light / Dark Mode">
+                    <i class="fas fa-sun"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container" style="padding-top: 36px;">
+
+        <div class="card-header" style="border-bottom: none; margin-bottom: 24px;">
+            <div>
+                <h2 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main);">
+                    <i class="fas fa-clock-rotate-left" style="color: var(--accent-cyan);"></i>
+                    Prediction Logs & Database History
+                </h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
+                    Persistent records of evaluated messages stored securely in local SQLite database.
+                </p>
+            </div>
+            <div>
+                <button id="clearHistoryBtn" class="btn btn-secondary" style="color: var(--spam-title-color); border-color: rgba(239, 68, 68, 0.3);">
+                    <i class="fas fa-trash"></i> Clear All History
+                </button>
+            </div>
+        </div>
+
+        <!-- History Stats Summary Cards -->
+        <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 28px;">
+            <div class="metric-card" style="padding: 16px;">
+                <div class="metric-value" id="totalCount">{{ stats.get('total', 0) }}</div>
+                <div class="metric-title">Total Evaluated</div>
+            </div>
+            <div class="metric-card" style="padding: 16px;">
+                <div class="metric-value" id="spamCount" style="color: var(--spam-title-color);">{{ stats.get('spam_count', 0) }}</div>
+                <div class="metric-title">Spam Emails</div>
+            </div>
+            <div class="metric-card" style="padding: 16px;">
+                <div class="metric-value" id="hamCount" style="color: var(--ham-title-color);">{{ stats.get('ham_count', 0) }}</div>
+                <div class="metric-title">Legitimate (Ham)</div>
+            </div>
+        </div>
+
+        <!-- Controls: Search & Filter -->
+        <div class="history-controls">
+            <div>
+                <input 
+                    type="text" 
+                    id="historySearch" 
+                    class="search-input" 
+                    placeholder="Search in message text or date...">
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.9rem;">
+                Showing <span id="recordCount" style="color: var(--text-main); font-weight: 700;">{{ predictions|length }}</span> records
+            </div>
+        </div>
+
+        <!-- Prediction Table -->
+        <div class="table-responsive">
+            <table class="custom-table" id="historyTable">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">ID</th>
+                        <th>Email / Message Content</th>
+                        <th style="width: 140px;">Prediction</th>
+                        <th style="width: 120px;">Confidence</th>
+                        <th style="width: 180px;">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if predictions %}
+                        {% for row in predictions %}
+                        <tr class="history-row">
+                            <td style="color: var(--text-dim); font-family: 'JetBrains Mono';">#{{ row.id }}</td>
+                            <td>
+                                <div class="msg-preview" title="{{ row.message }}">{{ row.message }}</div>
+                            </td>
+                            <td>
+                                {% if row.prediction == 'SPAM' %}
+                                    <span class="badge badge-spam"><i class="fas fa-triangle-exclamation"></i> SPAM</span>
+                                {% else %}
+                                    <span class="badge badge-ham"><i class="fas fa-check"></i> NOT SPAM</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-family: 'JetBrains Mono'; font-weight: 600; color: var(--text-main);">
+                                {{ row.confidence }}%
+                            </td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">
+                                {{ row.created_at }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr id="emptyRow">
+                            <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-dim);">
+                                <i class="fas fa-inbox" style="font-size: 2.5rem; margin-bottom: 12px; display: block; opacity: 0.3;"></i>
+                                No predictions recorded yet. Test some messages on the home page!
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" style="margin-top: 60px;">
+        <div class="container">
+            <p>Spam Email Detection Using Machine Learning &copy; Machine Learning Lab Mini Project</p>
+        </div>
+    </footer>
+
+    <!-- History Page Script -->
+    <script>
+        // Theme toggle for history page
+        function updateThemeIcon(theme) {
+            const themeBtn = document.getElementById('themeToggleBtn');
+            if (!themeBtn) return;
+            if (theme === 'light') {
+                themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                themeBtn.setAttribute('title', 'Switch to Dark Mode');
+            } else {
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                themeBtn.setAttribute('title', 'Switch to Light Mode');
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('spamguard_theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            updateThemeIcon(currentTheme);
+
+            const themeBtn = document.getElementById('themeToggleBtn');
+            if (themeBtn) {
+                themeBtn.addEventListener('click', toggleTheme);
+            }
+
+            const searchInput = document.getElementById('historySearch');
+            const clearBtn = document.getElementById('clearHistoryBtn');
+            const tableRows = document.querySelectorAll('.history-row');
+            const recordCount = document.getElementById('recordCount');
+
+            // Search filter
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase();
+                    let visible = 0;
+                    tableRows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        if (text.includes(query)) {
+                            row.style.display = '';
+                            visible++;
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                    if (recordCount) recordCount.textContent = visible;
+                });
+            }
+
+            // Clear history button
+            if (clearBtn) {
+                clearBtn.addEventListener('click', async () => {
+                    if (!confirm('Are you sure you want to delete all prediction history from SQLite?')) {
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/clear-history', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Failed to clear history: ' + (data.error || 'Unknown error'));
+                        }
+                    } catch (err) {
+                        alert('Could not connect to server.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

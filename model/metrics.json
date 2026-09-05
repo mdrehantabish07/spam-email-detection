@@ -1,0 +1,44 @@
+{
+    "accuracy": 98.26,
+    "precision": 97.48,
+    "recall": 88.55,
+    "f1_score": 92.8,
+    "confusion_matrix": {
+        "true_negative": 900,
+        "false_positive": 3,
+        "false_negative": 15,
+        "true_positive": 116
+    },
+    "classification_report": {
+        "Ham (0)": {
+            "precision": 0.9836065573770492,
+            "recall": 0.9966777408637874,
+            "f1-score": 0.9900990099009901,
+            "support": 903.0
+        },
+        "Spam (1)": {
+            "precision": 0.9747899159663865,
+            "recall": 0.8854961832061069,
+            "f1-score": 0.928,
+            "support": 131.0
+        },
+        "accuracy": 0.9825918762088974,
+        "macro avg": {
+            "precision": 0.9791982366717178,
+            "recall": 0.9410869620349471,
+            "f1-score": 0.959049504950495,
+            "support": 1034.0
+        },
+        "weighted avg": {
+            "precision": 0.9824895554188318,
+            "recall": 0.9825918762088974,
+            "f1-score": 0.982231533791677,
+            "support": 1034.0
+        }
+    },
+    "total_samples": 5169,
+    "train_samples": 4135,
+    "test_samples": 1034,
+    "algorithm": "Multinomial Naive Bayes (alpha=0.1)",
+    "vectorizer": "TF-IDF (ngram_range=(1,2), max_features=7500, sublinear_tf=True)"
+}

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spam Email Detection Using Machine Learning</title>
+    <meta name="description" content="College Machine Learning Lab Mini Project - Spam Email Classifier using NLP, TF-IDF, and Multinomial Naive Bayes.">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Inline theme init to avoid flicker on page load
+        (function() {
+            var theme = localStorage.getItem('spamguard_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="brand">
+                <div class="brand-icon">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>SpamGuard ML</h1>
+                    <span>ML Lab Mini Project</span>
+                </div>
+            </a>
+            
+            <div class="nav-right">
+                <ul class="nav-links">
+                    <li><a href="#home" class="nav-link active">Home</a></li>
+                    <li><a href="#about" class="nav-link">About</a></li>
+                    <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                    <li><a href="#metrics" class="nav-link">Model Performance</a></li>
+                    <li><a href="/history" class="nav-link nav-btn"><i class="fas fa-clock-rotate-left"></i> History</a></li>
+                </ul>
+                
+                <!-- Light / Dark Mode Toggle Button -->
+                <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Light / Dark Mode">
+                    <i class="fas fa-sun"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="hero-badge">
+                <i class="fas fa-brain"></i> Multinomial Naive Bayes + TF-IDF
+            </div>
+            <h2>Spam Email Detection Using Machine Learning</h2>
+            <p>Classify incoming emails and text messages with real-time probabilistic Natural Language Processing.</p>
+        </section>
+
+        <!-- Main Interactive Grid: Input & Output -->
+        <div class="main-grid">
+
+            <!-- Input Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-envelope-open-text" style="color: var(--primary);"></i>
+                        Email Message Input
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <textarea 
+                        id="emailInput" 
+                        class="email-input" 
+                        placeholder="Enter your email/message here..."
+                        spellcheck="false"></textarea>
+                    <div class="input-footer">
+                        <span id="charCount">0 characters</span>
+                        <span id="wordCount">0 words</span>
+                    </div>
+                </div>
+
+                <!-- Quick Test Preset Samples -->
+                <div class="sample-section">
+                    <div class="sample-title">
+                        <i class="fas fa-vial"></i> Quick Test Examples:
+                    </div>
+                    <div class="sample-pills">
+                        <button type="button" class="sample-pill spam-pill" data-sample="lottery">
+                            <i class="fas fa-gift"></i> Lucky Draw ₹50k (Spam)
+                        </button>
+                        <button type="button" class="sample-pill spam-pill" data-sample="bank">
+                            <i class="fas fa-triangle-exclamation"></i> Bank Blocked Alert (Spam)
+                        </button>
+                        <button type="button" class="sample-pill spam-pill" data-sample="iphone">
+                            <i class="fas fa-mobile-screen-button"></i> Free iPhone Offer (Spam)
+                        </button>
+                        <button type="button" class="sample-pill spam-pill" data-sample="earn">
+                            <i class="fas fa-coins"></i> Earn Daily ₹10k (Spam)
+                        </button>
+                        <button type="button" class="sample-pill ham-pill" data-sample="meeting">
+                            <i class="fas fa-calendar-check"></i> Project Meeting (Ham)
+                        </button>
+                        <button type="button" class="sample-pill ham-pill" data-sample="assignment">
+                            <i class="fas fa-graduation-cap"></i> ML Assignment (Ham)
+                        </button>
+                        <button type="button" class="sample-pill ham-pill" data-sample="sync">
+                            <i class="fas fa-clock"></i> Evening Sync (Ham)
+                        </button>
+                        <button type="button" class="sample-pill ham-pill" data-sample="report">
+                            <i class="fas fa-file-lines"></i> Updated Report (Ham)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="button-row">
+                    <button id="checkBtn" class="btn btn-primary">
+                        <i class="fas fa-magnifying-glass"></i> Check Email
+                    </button>
+                    <button id="clearBtn" class="btn btn-secondary">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Prediction Result Card -->
+            <div class="card result-card">
+                
+                <!-- Default Placeholder -->
+                <div id="resultPlaceholder" class="result-placeholder">
+                    <i class="fas fa-microchip"></i>
+                    <h3>Awaiting Analysis</h3>
+                    <p>Enter an email message and click <strong>Check Email</strong> or choose a preset example above.</p>
+                </div>
+
+                <!-- Result Content (Appears on prediction) -->
+                <div id="resultContent" class="result-content">
+                    
+                    <!-- Prediction Badge -->
+                    <div id="badgeBox" class="prediction-badge-box is-spam">
+                        <div id="badgeTitle" class="prediction-badge-title">
+                            <i class="fas fa-exclamation-triangle"></i> 🚨 SPAM EMAIL
+                        </div>
+                        <div id="badgeSubtext" class="prediction-subtext">
+                            Detected high likelihood of unsolicited/malicious content.
+                        </div>
+                    </div>
+
+                    <!-- Confidence Meter -->
+                    <div class="confidence-box">
+                        <div class="confidence-header">
+                            <span>Prediction Confidence</span>
+                            <span id="confidenceValue" style="font-family: 'JetBrains Mono'; font-weight: 700;">98.50%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="progressBarFill" class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Probabilities Split -->
+                    <div class="prob-split">
+                        <div class="prob-card">
+                            <div class="prob-card-label">Ham Probability</div>
+                            <div id="hamProbValue" class="prob-card-value" style="color: var(--ham-title-color);">0.00%</div>
+                        </div>
+                        <div class="prob-card">
+                            <div class="prob-card-label">Spam Probability</div>
+                            <div id="spamProbValue" class="prob-card-value" style="color: var(--spam-title-color);">100.00%</div>
+                        </div>
+                    </div>
+
+                    <!-- Cleaned Text Accordion -->
+                    <details class="cleaned-text-preview">
+                        <summary><i class="fas fa-code"></i> View Preprocessed Tokens</summary>
+                        <p id="cleanedTextVal">Sample preprocessed text will appear here...</p>
+                    </details>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Section: How It Works -->
+        <section id="how-it-works" class="section">
+            <div class="section-header">
+                <span class="section-tag">Architecture</span>
+                <h3 class="section-title">How It Works</h3>
+                <p class="section-desc">The end-to-end Machine Learning processing flow from user input to classification.</p>
+            </div>
+
+            <div class="pipeline-steps">
+                <div class="pipeline-card">
+                    <div class="step-number">1</div>
+                    <h4>Raw Input</h4>
+                    <p>User inputs message text via web application interface.</p>
+                </div>
+                <div class="pipeline-card">
+                    <div class="step-number">2</div>
+                    <h4>Preprocessing</h4>
+                    <p>Lowercases, normalizes URLs, currency ($/£/€/₹), emails, exclamations, and whitespace.</p>
+                </div>
+                <div class="pipeline-card">
+                    <div class="step-number">3</div>
+                    <h4>TF-IDF</h4>
+                    <p>Converts cleaned text into numerical n-gram sublinear term frequency vectors.</p>
+                </div>
+                <div class="pipeline-card">
+                    <div class="step-number">4</div>
+                    <h4>Naive Bayes</h4>
+                    <p>Calculates posterior class probabilities with tuned Laplace smoothing (&alpha;=0.1).</p>
+                </div>
+                <div class="pipeline-card">
+                    <div class="step-number">5</div>
+                    <h4>Output & DB</h4>
+                    <p>Returns SPAM/HAM label + confidence and stores in SQLite.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Model Performance -->
+        <section id="metrics" class="section">
+            <div class="section-header">
+                <span class="section-tag">Evaluation</span>
+                <h3 class="section-title">Model Performance Dashboard</h3>
+                <p class="section-desc">Real metrics generated from the Jupyter Notebook training on the 5,169-sample spam dataset.</p>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card accuracy">
+                    <div class="metric-value">{{ metrics.get('accuracy', 98.26) }}%</div>
+                    <div class="metric-title">Accuracy</div>
+                    <div class="metric-badge">Overall Correctness</div>
+                </div>
+                <div class="metric-card precision">
+                    <div class="metric-value">{{ metrics.get('precision', 97.48) }}%</div>
+                    <div class="metric-title">Precision</div>
+                    <div class="metric-badge">Spam Precision</div>
+                </div>
+                <div class="metric-card recall">
+                    <div class="metric-value">{{ metrics.get('recall', 88.55) }}%</div>
+                    <div class="metric-title">Recall</div>
+                    <div class="metric-badge">Spam Catch Rate</div>
+                </div>
+                <div class="metric-card f1">
+                    <div class="metric-value">{{ metrics.get('f1_score', 92.80) }}%</div>
+                    <div class="metric-title">F1-Score</div>
+                    <div class="metric-badge">Harmonic Mean</div>
+                </div>
+            </div>
+
+            <!-- Details: Confusion Matrix & Training Specs -->
+            <div class="details-grid">
+                
+                <!-- Confusion Matrix Table -->
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-table-cells" style="color: var(--accent-cyan);"></i>
+                        Confusion Matrix (Test Set: 1,034 samples)
+                    </div>
+                    <table class="cm-table">
+                        <thead>
+                            <tr>
+                                <th>Actual \ Predicted</th>
+                                <th>Predicted Ham</th>
+                                <th>Predicted Spam</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th>Actual Ham (903)</th>
+                                <td class="cm-cell cm-tn">{{ metrics.get('confusion_matrix', {}).get('true_negative', 900) }} (TN)</td>
+                                <td class="cm-cell cm-fp">{{ metrics.get('confusion_matrix', {}).get('false_positive', 3) }} (FP)</td>
+                            </tr>
+                            <tr>
+                                <th>Actual Spam (131)</th>
+                                <td class="cm-cell cm-fn">{{ metrics.get('confusion_matrix', {}).get('false_negative', 15) }} (FN)</td>
+                                <td class="cm-cell cm-tp">{{ metrics.get('confusion_matrix', {}).get('true_positive', 116) }} (TP)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Training Parameters & Specs -->
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-sliders" style="color: var(--accent-purple);"></i>
+                        ML Model Specifications
+                    </div>
+                    <ul class="specs-list">
+                        <li class="specs-item">
+                            <span class="specs-key">Algorithm</span>
+                            <span class="specs-val">{{ metrics.get('algorithm', 'Multinomial Naive Bayes (alpha=0.1)') }}</span>
+                        </li>
+                        <li class="specs-item">
+                            <span class="specs-key">Feature Extractor</span>
+                            <span class="specs-val">TF-IDF (1,2-grams, 7500 feats, sublinear_tf)</span>
+                        </li>
+                        <li class="specs-item">
+                            <span class="specs-key">Total Cleaned Dataset</span>
+                            <span class="specs-val">{{ metrics.get('total_samples', 5169) }} messages</span>
+                        </li>
+                        <li class="specs-item">
+                            <span class="specs-key">Train / Test Split</span>
+                            <span class="specs-val">80% Train ({{ metrics.get('train_samples', 4135) }}) / 20% Test ({{ metrics.get('test_samples', 1034) }})</span>
+                        </li>
+                        <li class="specs-item">
+                            <span class="specs-key">Split Strategy</span>
+                            <span class="specs-val">Stratified Random Split (seed=42)</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Section: About -->
+        <section id="about" class="section">
+            <div class="section-header">
+                <span class="section-tag">Overview</span>
+                <h3 class="section-title">About the Project</h3>
+                <p class="section-desc">Understanding spam detection, machine learning principles, and lab objectives.</p>
+            </div>
+
+            <div class="card" style="line-height: 1.8;">
+                <p style="margin-bottom: 16px;">
+                    <strong>Problem Statement:</strong> Spam emails and fraudulent messages represent a major cybersecurity and productivity issue, exposing users to financial scams, credential theft, and malware. Rule-based filters frequently fail against evolving vocabulary and deceptive spam tactics.
+                </p>
+                <p style="margin-bottom: 16px;">
+                    <strong>Why Machine Learning?</strong> Machine Learning algorithms learn subtle statistical word frequency distributions and co-occurrences across thousands of messages. By converting raw text into Term Frequency-Inverse Document Frequency (TF-IDF) feature vectors with normalized currency symbols and tokens, the system accurately predicts spam intent with <strong>{{ metrics.get('accuracy', 98.26) }}% accuracy</strong>, <strong>{{ metrics.get('precision', 97.48) }}% precision</strong>, and <strong>{{ metrics.get('recall', 88.55) }}% recall</strong>.
+                </p>
+                <p>
+                    <strong>Academic Lab Mapping:</strong> This project satisfies standard university Machine Learning Lab curriculum requirements: Data Preprocessing, TF-IDF Vectorization, Stratified Splitting, Naive Bayes Classification & Algorithm Comparison, Confusion Matrix calculation, Model Serialization (Joblib), SQLite CRUD integration, Light/Dark theme personalization, and Full-Stack Web Deployment.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="#home">Top</a>
+                <a href="#about">About</a>
+                <a href="#how-it-works">Pipeline</a>
+                <a href="#metrics">Metrics</a>
+                <a href="/history">Prediction History</a>
+            </div>
+            <p>Spam Email Detection Using Machine Learning &copy; Machine Learning Lab Mini Project</p>
+        </div>
+    </footer>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
